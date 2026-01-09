@@ -197,7 +197,6 @@
       const homeScreen = document.getElementById("home-screen");
       const instructionText = document.getElementById("instruction-text");
 
-      // Load specific color assets
       const redPlaneImg = new Image();
       redPlaneImg.src = "PRed.png";
       const yellowPlaneImg = new Image();
@@ -246,38 +245,32 @@
 
           // Plane Logic: Random Color Type
           this.type = Math.random() > 0.5 ? "RED" : "YELLOW";
-          this.currentImg = this.type === "RED" ? redPlaneImg : yellowPlaneImg;
-          this.pathColor = this.type === "RED" ? "#FF3333" : "#FFFF00";
+          this.glowColor = this.type === "RED" ? "#FF3333" : "#FFFF00";
+          this.img = this.type === "RED" ? redPlaneImg : yellowPlaneImg;
 
-          this.spawnSafely();
+          this.spawnWithBuffer();
         }
 
-        spawnSafely() {
-          let foundSafe = false;
+        spawnWithBuffer() {
           let attempts = 0;
-          
-          while (!foundSafe && attempts < 10) {
+          let safe = false;
+          while(!safe && attempts < 15) {
             const side = Math.floor(Math.random() * 4);
             let tx, ty, ta;
-
-            if (side === 0) { // Left
+            if (side === 0) {
               tx = -60; ty = Math.random() * window.innerHeight; ta = 0;
-            } else if (side === 1) { // Right
+            } else if (side === 1) {
               tx = window.innerWidth + 60; ty = Math.random() * window.innerHeight; ta = Math.PI;
-            } else if (side === 2) { // Top
+            } else if (side === 2) {
               tx = Math.random() * window.innerWidth; ty = -60; ta = Math.PI / 2;
-            } else { // Bottom
+            } else {
               tx = Math.random() * window.innerWidth; ty = window.innerHeight + 60; ta = -Math.PI / 2;
             }
 
-            // CHECK: Is anyone else spawning here right now?
-            const tooClose = planes.some(p => Math.sqrt((p.x - tx)**2 + (p.y - ty)**2) < 150);
-            
-            if (!tooClose || attempts === 9) {
-              this.x = tx;
-              this.y = ty;
-              this.angle = ta;
-              foundSafe = true;
+            // check proximity to existing planes
+            const tooClose = planes.some(p => Math.sqrt((p.x - tx)**2 + (p.y - ty)**2) < 200);
+            if(!tooClose || attempts === 14) {
+              this.x = tx; this.y = ty; this.angle = ta; safe = true;
             }
             attempts++;
           }
@@ -370,7 +363,7 @@
           if (this.path.length > 0 && !this.landing) {
             ctx.beginPath();
             ctx.setLineDash([5, 5]);
-            ctx.strokeStyle = this.pathColor;
+            ctx.strokeStyle = this.glowColor;
             ctx.lineWidth = 3;
             ctx.moveTo(this.x, this.y);
             this.path.forEach((p) => ctx.lineTo(p.x, p.y));
@@ -380,8 +373,6 @@
           ctx.save();
           ctx.globalAlpha = this.opacity;
           ctx.translate(this.x, this.y);
-
-          // REMOVED: Shadow glow logic to keep visuals clean with new assets
 
           if (this.isAlert && !this.landing) {
             ctx.beginPath();
@@ -399,9 +390,9 @@
           ctx.rotate(this.angle + Math.PI / 2);
           if (this.isCrashing) {
             ctx.globalCompositeOperation = "source-atop";
-            if (this.currentImg.complete)
+            if (this.img.complete)
               ctx.drawImage(
-                this.currentImg,
+                this.img,
                 -this.size / 2,
                 -this.size / 2,
                 this.size,
@@ -411,9 +402,9 @@
             ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
             ctx.globalCompositeOperation = "source-over";
           } else {
-            if (this.currentImg.complete)
+            if (this.img.complete)
               ctx.drawImage(
-                this.currentImg,
+                this.img,
                 -this.size / 2,
                 -this.size / 2,
                 this.size,
@@ -650,6 +641,12 @@
 
       function handleMove(x, y) {
         if (gameActive && selectedPlane && !selectedPlane.isLocked) {
+          // FIX: Check if plane still exists (didn't crash during drag)
+          if(!planes.includes(selectedPlane)){
+            selectedPlane = null;
+            return;
+          }
+
           const cx = window.innerWidth / 2;
           const cy = window.innerHeight / 2;
           const r1EntryX = cx - runway.w / 2;
