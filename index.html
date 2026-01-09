@@ -164,7 +164,7 @@
 
     <div id="home-screen" onclick="startGame()">
       <h1>AIR CONTROL</h1>
-      <img src="plane.png" id="plane-logo" alt="Plane Image" />
+      <img src="PRed.png" id="plane-logo" alt="Plane Image" />
       <div class="tap-to-play">TAP TO PLAY</div>
     </div>
 
@@ -197,8 +197,11 @@
       const homeScreen = document.getElementById("home-screen");
       const instructionText = document.getElementById("instruction-text");
 
-      const planeImg = new Image();
-      planeImg.src = "plane.png";
+      // Load specific color assets
+      const redPlaneImg = new Image();
+      redPlaneImg.src = "PRed.png";
+      const yellowPlaneImg = new Image();
+      yellowPlaneImg.src = "PYellow.png";
 
       let planes = [];
       let gameActive = false;
@@ -243,25 +246,40 @@
 
           // Plane Logic: Random Color Type
           this.type = Math.random() > 0.5 ? "RED" : "YELLOW";
-          this.glowColor = this.type === "RED" ? "#FF3333" : "#FFFF00";
+          this.currentImg = this.type === "RED" ? redPlaneImg : yellowPlaneImg;
+          this.pathColor = this.type === "RED" ? "#FF3333" : "#FFFF00";
 
-          const side = Math.floor(Math.random() * 4);
-          if (side === 0) {
-            this.x = -60;
-            this.y = Math.random() * window.innerHeight;
-            this.angle = 0;
-          } else if (side === 1) {
-            this.x = window.innerWidth + 60;
-            this.y = Math.random() * window.innerHeight;
-            this.angle = Math.PI;
-          } else if (side === 2) {
-            this.x = Math.random() * window.innerWidth;
-            this.y = -60;
-            this.angle = Math.PI / 2;
-          } else {
-            this.x = Math.random() * window.innerWidth;
-            this.y = window.innerHeight + 60;
-            this.angle = -Math.PI / 2;
+          this.spawnSafely();
+        }
+
+        spawnSafely() {
+          let foundSafe = false;
+          let attempts = 0;
+          
+          while (!foundSafe && attempts < 10) {
+            const side = Math.floor(Math.random() * 4);
+            let tx, ty, ta;
+
+            if (side === 0) { // Left
+              tx = -60; ty = Math.random() * window.innerHeight; ta = 0;
+            } else if (side === 1) { // Right
+              tx = window.innerWidth + 60; ty = Math.random() * window.innerHeight; ta = Math.PI;
+            } else if (side === 2) { // Top
+              tx = Math.random() * window.innerWidth; ty = -60; ta = Math.PI / 2;
+            } else { // Bottom
+              tx = Math.random() * window.innerWidth; ty = window.innerHeight + 60; ta = -Math.PI / 2;
+            }
+
+            // CHECK: Is anyone else spawning here right now?
+            const tooClose = planes.some(p => Math.sqrt((p.x - tx)**2 + (p.y - ty)**2) < 150);
+            
+            if (!tooClose || attempts === 9) {
+              this.x = tx;
+              this.y = ty;
+              this.angle = ta;
+              foundSafe = true;
+            }
+            attempts++;
           }
         }
 
@@ -352,7 +370,7 @@
           if (this.path.length > 0 && !this.landing) {
             ctx.beginPath();
             ctx.setLineDash([5, 5]);
-            ctx.strokeStyle = this.glowColor;
+            ctx.strokeStyle = this.pathColor;
             ctx.lineWidth = 3;
             ctx.moveTo(this.x, this.y);
             this.path.forEach((p) => ctx.lineTo(p.x, p.y));
@@ -363,9 +381,7 @@
           ctx.globalAlpha = this.opacity;
           ctx.translate(this.x, this.y);
 
-          // Plane Shadows based on type
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = this.glowColor;
+          // REMOVED: Shadow glow logic to keep visuals clean with new assets
 
           if (this.isAlert && !this.landing) {
             ctx.beginPath();
@@ -382,12 +398,10 @@
           }
           ctx.rotate(this.angle + Math.PI / 2);
           if (this.isCrashing) {
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = "red";
             ctx.globalCompositeOperation = "source-atop";
-            if (planeImg.complete)
+            if (this.currentImg.complete)
               ctx.drawImage(
-                planeImg,
+                this.currentImg,
                 -this.size / 2,
                 -this.size / 2,
                 this.size,
@@ -397,9 +411,9 @@
             ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
             ctx.globalCompositeOperation = "source-over";
           } else {
-            if (planeImg.complete)
+            if (this.currentImg.complete)
               ctx.drawImage(
-                planeImg,
+                this.currentImg,
                 -this.size / 2,
                 -this.size / 2,
                 this.size,
@@ -716,4 +730,3 @@
     </script>
   </body>
 </html>
-
