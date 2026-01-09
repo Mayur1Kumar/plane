@@ -174,7 +174,7 @@
 
     <script>
       /** * CONFIGURATION */
-      const BASE_SPAWN = 3000;
+      const BASE_SPAWN = 3500;
       const BASE_SPEED = 0.6;
       const COLLISION_DIST = 35;
       const ALERT_DIST = 85;
@@ -209,24 +209,22 @@
       let score = 0;
       let arrowOffset = 0;
 
+      /** * IMPROVED RESIZE FOR S23 ULTRA (High DPI)
+       */
       function resize() {
-  const dpr = window.devicePixelRatio || 1;
-  
-  // 1. Set the visual size (how big it looks on your S23)
-  canvas.style.width = window.innerWidth + 'px';
-  canvas.style.height = window.innerHeight + 'px';
-  
-  // 2. Set the actual internal resolution (high-density)
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
-  
-  // 3. Scale the drawing context so your coordinates still work
-  ctx.scale(dpr, dpr);
-
-  // 4. Set smoothing to high (Place it here!)
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-}
+        const dpr = window.devicePixelRatio || 1;
+        // Logical CSS pixels
+        canvas.style.width = window.innerWidth + "px";
+        canvas.style.height = window.innerHeight + "px";
+        // Physical device pixels
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        
+        // Normalize coordinates and set high quality
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+      }
       window.addEventListener("resize", resize);
       resize();
 
@@ -250,19 +248,19 @@
           const side = Math.floor(Math.random() * 4);
           if (side === 0) {
             this.x = -60;
-            this.y = Math.random() * canvas.height;
+            this.y = Math.random() * window.innerHeight;
             this.angle = 0;
           } else if (side === 1) {
-            this.x = canvas.width + 60;
-            this.y = Math.random() * canvas.height;
+            this.x = window.innerWidth + 60;
+            this.y = Math.random() * window.innerHeight;
             this.angle = Math.PI;
           } else if (side === 2) {
-            this.x = Math.random() * canvas.width;
+            this.x = Math.random() * window.innerWidth;
             this.y = -60;
             this.angle = Math.PI / 2;
           } else {
-            this.x = Math.random() * canvas.width;
-            this.y = canvas.height + 60;
+            this.x = Math.random() * window.innerWidth;
+            this.y = window.innerHeight + 60;
             this.angle = -Math.PI / 2;
           }
         }
@@ -270,9 +268,9 @@
         isOnScreen() {
           return (
             this.x > 0 &&
-            this.x < canvas.width &&
+            this.x < window.innerWidth &&
             this.y > 0 &&
-            this.y < canvas.height
+            this.y < window.innerHeight
           );
         }
 
@@ -281,8 +279,8 @@
           if (this.landing) {
             const targetX =
               this.landingDir === 1
-                ? canvas.width / 2 + 100
-                : canvas.width / 2 - 100;
+                ? window.innerWidth / 2 + 100
+                : window.innerWidth / 2 - 100;
             this.x += (targetX - this.x) * 0.05 * gameSpeedMultiplier;
             this.y += (this.targetY - this.y) * 0.1 * gameSpeedMultiplier;
             this.angle = this.landingDir === 1 ? 0 : Math.PI;
@@ -311,15 +309,15 @@
             this.x += Math.cos(this.angle) * currentSpeed;
             this.y += Math.sin(this.angle) * currentSpeed;
           }
-          if (this.x < -100) this.x = canvas.width + 80;
-          if (this.x > canvas.width + 100) this.x = -80;
-          if (this.y < -100) this.y = canvas.height + 80;
-          if (this.y > canvas.height + 100) this.y = -80;
+          if (this.x < -100) this.x = window.innerWidth + 80;
+          if (this.x > window.innerWidth + 100) this.x = -80;
+          if (this.y < -100) this.y = window.innerHeight + 80;
+          if (this.y > window.innerHeight + 100) this.y = -80;
         }
 
         checkManualLanding() {
-          const cx = canvas.width / 2;
-          const cy = canvas.height / 2;
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
           const r1EntryX = cx - runway.w / 2;
           const r1Y = cy - runway.gap / 2;
           const r2EntryX = cx + runway.w / 2;
@@ -449,7 +447,7 @@
               showCrashText((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
               updateScore(-1);
               p1.x = -500;
-              p2.x = canvas.width + 500;
+              p2.x = window.innerWidth + 500;
               p1.path = [];
               p2.path = [];
             }
@@ -463,8 +461,8 @@
       }
 
       function drawRunway() {
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
         ctx.save();
 
         // Island Base Background Layers
@@ -638,8 +636,8 @@
 
       function handleMove(x, y) {
         if (gameActive && selectedPlane && !selectedPlane.isLocked) {
-          const cx = canvas.width / 2;
-          const cy = canvas.height / 2;
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
           const r1EntryX = cx - runway.w / 2;
           const r1Y = cy - runway.gap / 2;
           const r2EntryX = cx + runway.w / 2;
@@ -694,7 +692,7 @@
 
       function animate() {
         if (!gameActive) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         drawRunway();
         checkCollisions();
         for (let i = planes.length - 1; i >= 0; i--) {
@@ -718,5 +716,3 @@
     </script>
   </body>
 </html>
-
-
