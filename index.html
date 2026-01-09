@@ -210,9 +210,23 @@
       let arrowOffset = 0;
 
       function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
+  const dpr = window.devicePixelRatio || 1;
+  
+  // 1. Set the visual size (how big it looks on your S23)
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  
+  // 2. Set the actual internal resolution (high-density)
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  
+  // 3. Scale the drawing context so your coordinates still work
+  ctx.scale(dpr, dpr);
+
+  // 4. Set smoothing to high (Place it here!)
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+}
       window.addEventListener("resize", resize);
       resize();
 
@@ -704,4 +718,5 @@
     </script>
   </body>
 </html>
+
 
